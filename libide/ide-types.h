@@ -25,6 +25,8 @@
 
 G_BEGIN_DECLS
 
+typedef struct _IdeAstIndexer                  IdeAstIndexer;
+
 typedef struct _IdeBackForwardItem             IdeBackForwardItem;
 
 typedef struct _IdeBackForwardList             IdeBackForwardList;

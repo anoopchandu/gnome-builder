@@ -127,6 +127,7 @@ G_BEGIN_DECLS
 #include "sourceview/ide-source-view.h"
 #include "subprocess/ide-subprocess.h"
 #include "subprocess/ide-subprocess-launcher.h"
+#include "symbols/ide-ast-indexer.h"
 #include "symbols/ide-symbol-resolver.h"
 #include "symbols/ide-symbol.h"
 #include "symbols/ide-tags-builder.h"

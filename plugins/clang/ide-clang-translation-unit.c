@@ -1125,3 +1125,115 @@ ide_clang_translation_unit_get_symbol_tree_finish (IdeClangTranslationUnit  *sel
 
   return g_task_propagate_pointer (task, error);
 }
+
+enum CXChildVisitResult
+ide_clang_translation_unit_index__visitor_cb (CXCursor     cursor,
+                                              CXCursor     parent,
+                                              CXClientData clientData)
+{
+  enum CXCursorKind cursorKind;
+
+  cursorKind = clang_getCursorKind (cursor);
+
+  if (((cursorKind >= CXCursor_StructDecl) && (cursorKind <= CXCursor_TypeAliasDecl)) ||
+      cursorKind ==  CXCursor_MacroDefinition)
+    {
+      CXSourceLocation location;
+
+      location = clang_getCursorLocation (cursor);
+
+      if (clang_Location_isFromMainFile (location))
+        {
+          /* pointer to pointer*/
+          gpointer *data = clientData;
+          DzlFuzzyIndexBuilder *index_builder;
+          CXFile file;
+          CXString USR;
+          const gchar *key;
+          guint32 fileid, line, column;
+          gboolean type, local;
+
+          g_assert (clientData != NULL);
+
+          index_builder = data[0];
+          fileid = GPOINTER_TO_UINT (data[1]);
+
+          clang_getSpellingLocation (location, &file, &line, &column, NULL);
+
+          USR = clang_getCursorUSR (cursor);
+          key = clang_getCString(USR);
+
+          /* for non local declarations USR will be like "c:@..." */
+          // while (*key != ':' && *key != '\0')
+          //   key++;
+          local = (key[2] != '@');
+
+          type = !!clang_isCursorDefinition (cursor);
+
+          dzl_fuzzy_index_builder_insert (index_builder,
+                                          key,
+                                          g_variant_new ("(uuubb)", fileid,
+                                          line, column, type, local),
+                                          0);
+
+          g_print ("%s\n", key);
+          clang_disposeString (USR);
+        }
+    }
+
+  return CXChildVisit_Recurse;
+}
+
+static void
+tu_index (GTask        *task,
+          gpointer      source_object,
+          gpointer      task_data,
+          GCancellable *cancellable)
+{
+  IdeClangTranslationUnit *self = (IdeClangTranslationUnit *)source_object;
+  CXCursor cursor;
+
+  g_assert (G_IS_TASK (task));
+
+  cursor = clang_getTranslationUnitCursor (ide_ref_ptr_get (self->native));
+  clang_visitChildren (cursor,
+                       ide_clang_translation_unit_index__visitor_cb,
+                       task_data);
+
+  g_task_return_boolean (task, TRUE);
+}
+
+void
+ide_clang_translation_unit_index_async (IdeClangTranslationUnit *self,
+                                        DzlFuzzyIndexBuilder    *index_builder,
+                                        gpointer                 fileid,
+                                        GCancellable            *cancellable,
+                                        GAsyncReadyCallback      callback,
+                                        gpointer                 user_data)
+{
+  GTask *task;
+  gpointer *data;
+
+  g_assert (IDE_IS_CLANG_TRANSLATION_UNIT (self));
+
+  data = g_new (gpointer, 2);
+  data[0] = index_builder;
+  data[2] = fileid;
+
+  task = g_task_new (self, cancellable, callback, user_data);
+  g_task_set_task_data (task, data, g_free);
+
+  ide_thread_pool_push_task (IDE_THREAD_POOL_INDEXER, task, tu_index);
+}
+
+gboolean
+ide_clang_translation_unit_index_finish (IdeClangTranslationUnit *self,
+                                         GAsyncResult            *result,
+                                         GError                 **error)
+{
+  GTask *task = (GTask *)result;
+
+  g_return_val_if_fail (G_IS_TASK (result), FALSE);
+
+  return g_task_propagate_boolean (task, error);
+}

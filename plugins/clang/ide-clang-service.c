@@ -512,6 +512,7 @@ ide_clang_service_get_translation_unit_worker (DzlTaskCache  *cache,
    * Request the build flags necessary to build this module from the build system.
    */
   IDE_TRACE_MSG ("Requesting build of translation unit");
+
   ide_build_system_get_build_flags_async (build_system,
                                           request->file,
                                           g_task_get_cancellable (task),
@@ -733,6 +734,13 @@ ide_clang_service_get_cached_translation_unit (IdeClangService *self,
   cached = dzl_task_cache_peek (self->units_cache, file);
 
   return cached ? g_object_ref (cached) : NULL;
+}
+
+void
+ide_clang_service_evict_translation_unit (IdeClangService *self,
+                                          IdeFile         *file)
+{
+  dzl_task_cache_evict (self->units_cache, file);
 }
 
 void

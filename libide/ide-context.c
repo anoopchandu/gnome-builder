@@ -47,6 +47,7 @@
 #include "projects/ide-recent-projects.h"
 #include "runner/ide-run-manager.h"
 #include "runtimes/ide-runtime-manager.h"
+#include "symbols/ide-ast-indexer.h"
 #include "search/ide-search-engine.h"
 #include "search/ide-search-provider.h"
 #include "snippets/ide-source-snippets-manager.h"
@@ -62,6 +63,7 @@ struct _IdeContext
 {
   GObject                   parent_instance;
 
+  IdeAstIndexer            *ast_indexer;
   IdeBackForwardList       *back_forward_list;
   IdeBufferManager         *buffer_manager;
   IdeBuildManager          *build_manager;
@@ -140,6 +142,51 @@ ide_context_get_recent_manager (IdeContext *self)
   g_return_val_if_fail (IDE_IS_CONTEXT (self), NULL);
 
   return self->recent_manager;
+}
+
+/**
+ * ide_context_get_ast_indexer:
+ *
+ * Gets an implementation of IdeAstIndexer interface.
+ *
+ * Returns: (transfer none): An #IdeAstIndexer.
+ */
+IdeAstIndexer *
+ide_context_get_ast_indexer (IdeContext *self)
+{
+  g_return_val_if_fail (IDE_IS_CONTEXT (self), NULL);
+
+  if (self->ast_indexer == NULL)
+    {
+      const GList *plugins;
+      PeasEngine *engine;
+
+      engine = peas_engine_get_default ();
+      plugins = peas_engine_get_plugin_list (engine);
+
+      for (;plugins != NULL; plugins = plugins->next)
+        {
+          PeasPluginInfo *plugin_info;
+
+          plugin_info = plugins->data;
+
+          if (peas_engine_provides_extension (engine, plugin_info, IDE_TYPE_AST_INDEXER))
+            {
+              PeasExtension *extension;
+
+              extension = peas_engine_create_extension (engine, plugin_info,
+                                                        IDE_TYPE_AST_INDEXER,
+                                                        "context", self,
+                                                        NULL);
+              self->ast_indexer = IDE_AST_INDEXER (extension);
+
+              break;
+            }
+        }
+
+    }
+
+    return self->ast_indexer;
 }
 
 /**

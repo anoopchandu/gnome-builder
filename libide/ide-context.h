@@ -30,6 +30,7 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (IdeContext, ide_context, IDE, CONTEXT, GObject)
 
+IdeAstIndexer            *ide_context_get_ast_indexer           (IdeContext           *self);
 IdeBackForwardList       *ide_context_get_back_forward_list     (IdeContext           *self);
 GFile                    *ide_context_get_project_file          (IdeContext           *self);
 IdeBufferManager         *ide_context_get_buffer_manager        (IdeContext           *self);

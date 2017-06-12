@@ -38,6 +38,8 @@ IdeClangTranslationUnit *ide_clang_service_get_translation_unit_finish (IdeClang
                                                                         GError              **error);
 IdeClangTranslationUnit *ide_clang_service_get_cached_translation_unit (IdeClangService      *self,
                                                                         IdeFile              *file);
+void                     ide_clang_service_evict_translation_unit      (IdeClangService      *self,
+                                                                        IdeFile              *file);
 
 G_END_DECLS
 

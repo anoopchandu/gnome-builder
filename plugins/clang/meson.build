@@ -1,6 +1,8 @@
 if get_option('with_clang')
 
 clang_sources = [
+  'ide-clang-ast-indexer.c',
+  'ide-clang-ast-indexer.h',
   'ide-clang-completion-item.c',
   'ide-clang-completion-item.h',
   'ide-clang-completion-item-private.h',

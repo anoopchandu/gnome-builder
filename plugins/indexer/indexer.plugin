@@ -1,0 +1,10 @@
+[Plugin]
+Module=indexer-plugin
+Depends=clang-plugin
+Name=Indexer
+Description=Indexes C/C++ projects for Global Search and Jump to Definition.
+Authors=Anoop Chandu <anoopchandu96@gmail.com>
+Copyright=Copyright © 2017 Anoop Chandu
+Builtin=true
+X-Symbol-Resolver-Languages=c,chdr,cpp
+X-Symbol-Resolver-Languages-Priority=150

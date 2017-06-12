@@ -55,6 +55,15 @@ IdeSymbol         *ide_clang_translation_unit_lookup_symbol            (IdeClang
                                                                         GError                  **error);
 GPtrArray         *ide_clang_translation_unit_get_symbols              (IdeClangTranslationUnit  *self,
                                                                         IdeFile                  *file);
+void               ide_clang_translation_unit_index_async              (IdeClangTranslationUnit *self,
+                                                                        DzlFuzzyIndexBuilder    *index_builder,
+                                                                        gpointer                 fileid,
+                                                                        GCancellable            *cancellable,
+                                                                        GAsyncReadyCallback      callback,
+                                                                        gpointer                 user_data);
+gboolean           ide_clang_translation_unit_index_finish             (IdeClangTranslationUnit *self,
+                                                                        GAsyncResult            *result,
+                                                                        GError                 **error);
 
 G_END_DECLS
 
