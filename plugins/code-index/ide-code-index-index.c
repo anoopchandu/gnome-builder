@@ -36,12 +36,14 @@ struct _IdeCodeIndexIndex
 
   GHashTable *directories;
   GPtrArray  *indexes;
+
+  GMutex      update_entries;
 };
 
 typedef struct
 {
-  DzlFuzzyIndex *symbol_names;
-  IdePersistentMap        *symbol_keys;
+  DzlFuzzyIndex    *symbol_names;
+  IdePersistentMap *symbol_keys;
 } DirectoryIndex;
 
 typedef struct
@@ -171,6 +173,8 @@ ide_code_index_index_load (IdeCodeIndexIndex   *self,
 
   dir_name = g_file_get_path (directory);
 
+  g_mutex_lock (&self->update_entries);
+
   if (g_hash_table_lookup_extended (self->directories,
                                     dir_name,
                                     NULL,
@@ -190,6 +194,8 @@ ide_code_index_index_load (IdeCodeIndexIndex   *self,
 
       g_ptr_array_add (self->indexes, g_steal_pointer (&dir_index));
     }
+
+  g_mutex_unlock (&self->update_entries);
 
   return TRUE;
 }
@@ -263,6 +269,8 @@ ide_code_index_index_load_if_nmod (IdeCodeIndexIndex     *self,
 
   dir_name = g_file_get_path (directory);
 
+  g_mutex_lock (&self->update_entries);
+
   if (g_hash_table_lookup_extended (self->directories,
                                     dir_name,
                                     NULL,
@@ -281,6 +289,8 @@ ide_code_index_index_load_if_nmod (IdeCodeIndexIndex     *self,
 
       g_ptr_array_add (self->indexes, g_steal_pointer (&dir_index));
     }
+
+  g_mutex_unlock (&self->update_entries);
 
   return TRUE;
 }
@@ -585,6 +595,8 @@ ide_code_index_index_finalize (GObject *object)
   g_clear_pointer (&self->directories, g_hash_table_unref);
   g_clear_pointer (&self->indexes, g_ptr_array_unref);
 
+  g_mutex_clear (&self->update_entries);
+
   G_OBJECT_CLASS (ide_code_index_index_parent_class)->finalize (object);
 }
 
@@ -593,6 +605,8 @@ ide_code_index_index_init (IdeCodeIndexIndex *self)
 {
   self->directories = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   self->indexes = g_ptr_array_new_with_free_func ((GDestroyNotify)directory_index_free);
+
+  g_mutex_init (&self->update_entries);
 }
 
 static void
