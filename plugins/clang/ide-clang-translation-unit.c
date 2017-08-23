@@ -943,6 +943,7 @@ ide_clang_translation_unit_lookup_symbol (IdeClangTranslationUnit  *self,
     IDE_RETURN (NULL);
 
   tmpcursor = clang_getCursorReferenced (cursor);
+
   if (!clang_Cursor_isNull (tmpcursor))
     {
       CXSourceLocation tmploc;
@@ -1301,8 +1302,7 @@ ide_clang_translation_unit_find_nearest_scope (IdeClangTranslationUnit  *self,
 
 gchar *
 ide_clang_translation_unit_get_key (IdeClangTranslationUnit  *self,
-                                    IdeSourceLocation        *location,
-                                    GError                  **error)
+                                    IdeSourceLocation        *location)
 {
   CXTranslationUnit unit;
   CXFile file;
@@ -1311,9 +1311,10 @@ ide_clang_translation_unit_get_key (IdeClangTranslationUnit  *self,
   CXCursor declaration;
   CXString cx_usr;
   const gchar *usr;
-  gchar *ret = NULL;
+  g_autofree gchar *ret = NULL;
   guint line = 0;
   guint column = 0;
+  enum CXLinkageKind linkage;
 
   g_return_val_if_fail (IDE_IS_CLANG_TRANSLATION_UNIT (self), NULL);
 
@@ -1328,14 +1329,20 @@ ide_clang_translation_unit_get_key (IdeClangTranslationUnit  *self,
   reference = clang_getCursor (unit, cx_location);
   declaration = clang_getCursorReferenced (reference);
   cx_usr = clang_getCursorUSR (declaration);
+
+  linkage = clang_getCursorLinkage (declaration);
+
+  if (linkage == CXLinkage_Internal || linkage == CXLinkage_NoLinkage)
+    return NULL;
+
   usr = clang_getCString (cx_usr);
 
   if (usr == NULL)
-    *error = g_error_new (G_IO_ERROR, G_IO_ERROR_NOT_FOUND, "Key not found");
-  else
-    ret = g_strdup (usr);
+    return NULL;
+
+  ret = g_strdup (usr);
 
   clang_disposeString (cx_usr);
 
-  return ret;
+  return g_steal_pointer (&ret);
 }
