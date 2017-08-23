@@ -942,7 +942,10 @@ ide_clang_translation_unit_lookup_symbol (IdeClangTranslationUnit  *self,
   if (clang_Cursor_isNull (cursor))
     IDE_RETURN (NULL);
 
-  tmpcursor = clang_getCursorReferenced (cursor);
+  tmpcursor = clang_getCursorDefinition (cursor);
+
+  if (clang_Cursor_isNull (tmpcursor))
+    tmpcursor = clang_getCursorReferenced (cursor);
 
   if (!clang_Cursor_isNull (tmpcursor))
     {
