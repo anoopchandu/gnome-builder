@@ -104,9 +104,13 @@ gbp_symbol_layout_stack_addin_find_scope_cb (GObject      *object,
       return;
     }
 
-  if (symbol == NULL)
-    g_warning ("Failed to find nearest scope");
-  else if (self->button != NULL)  /* If we were destroyed, short-circuit */
+  if (error != NULL &&
+      !(g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED) ||
+        g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND) ||
+        g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED)))
+    g_warning ("Failed to find nearest scope: %s", error->message);
+
+  if (self->button != NULL)
     gbp_symbol_menu_button_set_symbol (self->button, symbol);
 }
 
@@ -232,9 +236,13 @@ gbp_symbol_layout_stack_addin_get_symbol_tree_cb (GObject      *object,
       return;
     }
 
-  if (tree == NULL)
-    g_warning ("Failed to get symbol tree");
-  if (self->button != NULL)  /* If we were destroyed, short-circuit */
+  if (error != NULL &&
+      !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED) &&
+      !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED))
+    g_warning ("Failed to get symbol tree%s", error->message);
+
+  /* If we were destroyed, short-circuit */
+  if (self->button != NULL)
     gbp_symbol_menu_button_set_symbol_tree (self->button, tree);
 }
 
